@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Lesson Planner</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <!-- React Development Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-router-dom@6/umd/react-router-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- React Components -->
+    <script type="text/babel">
+        // Navigation Component
+        const Navigation = ({ user, onLogout }) => {
+            return (
+                <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+                    <div className="container">
+                        <a className="navbar-brand" href="/">Teacher's Lesson Planner</a>
+                        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                            <span className="navbar-toggler-icon"></span>
+                        </button>
+                        <div className="collapse navbar-collapse" id="navbarNav">
+                            {user ? (
+                                <>
+                                    <ul className="navbar-nav me-auto">
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/dashboard">Dashboard</Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/lessons">My Lessons</Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/lessons/new">Create New Lesson</Link>
+                                        </li>
+                                    </ul>
+                                    <div className="navbar-text me-2">
+                                        <span className="me-2">{user.name}</span>
+                                    </div>
+                                    <button onClick={onLogout} className="btn btn-outline-light">Logout</button>
+                                </>
+                            ) : (
+                                <ul className="navbar-nav ms-auto">
+                                    <li className="nav-item">
+                                        <Link className="nav-link" to="/login">Login / Register</Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                </nav>
+            );
+        };
+
+        // Auth Component (Login/Register)
+        const Auth = ({ onLogin, onRegister }) => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [formData, setFormData] = useState({
+                name: '',
+                email: '',
+                password: '',
+                confirmPassword: ''
+            });
+            const [errors, setErrors] = useState({});
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleChange = (e) => {
+                setFormData({
+                    ...formData,
+                    [e.target.name]: e.target.value
+                });
+            };
+
+            const validateForm = () => {
+                const newErrors = {};
+                
+                if (isLogin) {
+                    if (!formData.email) newErrors.email = 'Email is required';
+                    if (!formData.password) newErrors.password = 'Password is required';
+                } else {
+                    if (!formData.name) newErrors.name = 'Name is required';
+                    if (!formData.email) newErrors.email = 'Email is required';
+                    if (!formData.password) newErrors.password = 'Password is required';
+                    if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+                    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+                }
+                
+                return newErrors;
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                const formErrors = validateForm();
+                if (Object.keys(formErrors).length > 0) {
+                    setErrors(formErrors);
+                    return;
+                }
+                
+                setIsSubmitting(true);
+                setErrors({});
+                
+                try {
+                    if (isLogin) {
+                        const success = await onLogin({
+                            email: formData.email,
+                            password: formData.password
+                        });
+                        
+                        if (!success) {
+                            setErrors({ general: 'Invalid email or password' });
+                        }
+                    } else {
+                        const success = await onRegister({
+                            name: formData.name,
+                            email: formData.email,
+                            password: formData.password
+                        });
+                        
+                        if (success) {
+                            setIsLogin(true);
+                            setFormData({
+                                ...formData,
+                                name: '',
+                                password: '',
+                                confirmPassword: ''
+                            });
+                        }
+                    }
+                } catch (error) {
+                    setErrors({ general: error.message });
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="row justify-content-center">
+                    <div className="col-md-6">
+                        <div className="card shadow-sm">
+                            <div className="card-header bg-primary text-white">
+                                <ul className="nav nav-tabs card-header-tabs">
+                                    <li className="nav-item">
+                                        <button 
+                                            className={`nav-link ${isLogin ? 'active text-white' : 'text-light'}`}
+                                            onClick={() => setIsLogin(true)}
+                                        >
+                                            Login
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button 
+                                            className={`nav-link ${!isLogin ? 'active text-white' : 'text-light'}`}
+                                            onClick={() => setIsLogin(false)}
+                                        >
+                                            Register
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="card-body">
+                                {errors.general && (
+                                    <div className="alert alert-danger">{errors.general}</div>
+                                )}
+                                
+                                <form onSubmit={handleSubmit}>
+                                    {!isLogin && (
+                                        <div className="mb-3">
+                                            <label htmlFor="name" className="form-label">Name</label>
+                                            <input
+                                                type="text"
+                                                className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                                id="name"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                            />
+                                            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="mb-3">
+                                        <label htmlFor="email" className="form-label">Email</label>
+                                        <input
+                                            type="email"
+                                            className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                            id="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                        />
+                                        {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                                    </div>
+                                    
+                                    <div className="mb-3">
+                                        <label htmlFor="password" className="form-label">Password</label>
+                                        <input
+                                            type="password"
+                                            className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                            id="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                        />
+                                        {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                                    </div>
+                                    
+                                    {!isLogin && (
+                                        <div className="mb-3">
+                                            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+                                            <input
+                                                type="password"
+                                                className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                                                id="confirmPassword"
+                                                name="confirmPassword"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                            />
+                                            {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
+                                        </div>
+                                    )}
+                                    
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-primary w-100"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2"></span>
+                                                {isLogin ? 'Logging in...' : 'Registering...'}
+                                            </>
+                                        ) : (
+                                            isLogin ? 'Login' : 'Register'
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Dashboard Component
+        const Dashboard = ({ user }) => {
+            const [stats, setStats] = useState({
+                totalLessons: 0,
+                recentLessons: []
+            });
+            const [loading, setLoading] = useState(true);
+            const navigate = useNavigate();
+            
+            useEffect(() => {
+                const fetchStats = async () => {
+                    try {
+                        const response = await axios.get('/api/lessons');
+                        setStats({
+                            totalLessons: response.data.length,
+                            recentLessons: response.data.slice(0, 5)
+                        });
+                    } catch (error) {
+                        console.error('Error fetching dashboard data:', error);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                fetchStats();
+            }, []);
+            
+            if (loading) {
+                return (
+                    <div className="text-center py-5">
+                        <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div>
+                    <div className="row mb-4">
+                        <div className="col-12">
+                            <h2 className="mb-4">Welcome, {user.name}!</h2>
+                            <div className="card">
+                                <div className="card-body">
+                                    <h5 className="card-title">Dashboard</h5>
+                                    <div className="row g-4">
+                                        <div className="col-md-6">
+                                            <div className="p-3 border bg-light rounded">
+                                                <h3>{stats.totalLessons}</h3>
+                                                <p className="mb-0">Total Lessons Created</p>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="p-3 border bg-light rounded">
+                                                <h3><i className="bi bi-file-earmark-text"></i></h3>
+                                                <p className="mb-0">Create New Lesson Plan</p>
+                                                <button 
+                                                    className="btn btn-primary mt-2"
+                                                    onClick={() => navigate('/lessons/new')}
+                                                >
+                                                    Start New Lesson
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="row">
+                        <div className="col-12">
+                            <div className="card">
+                                <div className="card-header d-flex justify-content-between align-items-center">
+                                    <h5 className="mb-0">Recent Lessons</h5>
+                                    <button 
+                                        className="btn btn-outline-primary btn-sm"
+                                        onClick={() => navigate('/lessons')}
+                                    >
+                                        View All
+                                    </button>
+                                </div>
+                                <div className="card-body">
+                                    {stats.recentLessons.length > 0 ? (
+                                        <ul className="list-group">
+                                            {stats.recentLessons.map(lesson => (
+                                                <li key={lesson.id} className="list-group-item">
+                                                    <div className="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h6 className="mb-1">{lesson.topic}</h6>
+                                                            <small className="text-muted">
+                                                                Grade: {lesson.grade_level} | Strategy: {lesson.teaching_strategy.replace('_', ' ')}
+                                                            </small>
+                                                        </div>
+                                                        <button 
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => navigate(`/lessons/${lesson.id}`)}
+                                                        >
+                                                            View
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <div className="text-center py-3">
+                                            <p className="mb-0">No lessons created yet.</p>
+                                            <button 
+                                                className="btn btn-primary mt-2"
+                                                onClick={() => navigate('/lessons/new')}
+                                            >
+                                                Create Your First Lesson
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // LessonForm Component
+        const LessonForm = ({ user }) => {
+            const [formData, setFormData] = useState({
+                grade_level: 'K',
+                topic: '',
+                teaching_strategy: 'direct_instruction'
+            });
+            const [errors, setErrors] = useState({});
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const navigate = useNavigate();
+            const { id } = useParams();
+            
+            const gradeOptions = [
+                { value: 'K', label: 'Kindergarten' },
+                { value: '1', label: '1st Grade' },
+                { value: '2', label: '2nd Grade' },
+                { value: '3', label: '3rd Grade' },
+                { value: '4', label: '4th Grade' },
+                { value: '5', label: '5th Grade' },
+                { value: '6', label: '6th Grade' },
+                { value: '7', label: '7th Grade' },
+                { value: '8', label: '8th Grade' },
+                { value: '9', label: '9th Grade' },
+                { value: '10', label: '10th Grade' },
+                { value: '11', label: '11th Grade' },
+                { value: '12', label: '12th Grade' }
+            ];
+            
+            const strategyOptions = [
+                { value: 'cooperative_learning', label: 'Cooperative Learning' },
+                { value: 'brainstorming', label: 'Brainstorming' },
+                { value: 'discovery_learning', label: 'Discovery Learning' },
+                { value: 'direct_instruction', label: 'Direct Instruction' },
+                { value: 'project_based', label: 'Project-Based Learning' },
+                { value: 'flipped_classroom', label: 'Flipped Classroom' },
+                { value: 'inquiry_based', label: 'Inquiry-Based Learning' },
+                { value: 'differentiated_instruction', label: 'Differentiated Instruction' },
+                { value: 'game_based', label: 'Game-Based Learning' }
+            ];
+            
+            const handleChange = (e) => {
+                setFormData({
+                    ...formData,
+                    [e.target.name]: e.target.value
+                });
+            };
+            
+            const validateForm = () => {
+                const newErrors = {};
+                
+                if (!formData.topic) newErrors.topic = 'Lesson topic is required';
+                if (formData.topic && formData.topic.length < 3) newErrors.topic = 'Topic must be at least 3 characters';
+                
+                return newErrors;
+            };
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                const formErrors = validateForm();
+                if (Object.keys(formErrors).length > 0) {
+                    setErrors(formErrors);
+                    return;
+                }
+                
+                setIsSubmitting(true);
+                setErrors({});
+                
+                try {
+                    await axios.post('/api/lessons', formData);
+                    navigate('/lessons');
+                } catch (error) {
+                    setErrors({ general: error.response?.data?.message || 'Failed to create lesson' });
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+            
+            return (
+                <div>
+                    <h2 className="mb-4">Create New Lesson Plan</h2>
+                    
+                    <div className="card">
+                        <div className="card-body">
+                            {errors.general && (
+                                <div className="alert alert-danger">{errors.general}</div>
+                            )}
+                            
+                            <form onSubmit={handleSubmit}>
+                                <div className="mb-3">
+                                    <label htmlFor="grade_level" className="form-label">Grade Level</label>
+                                    <select
+                                        className="form-select"
+                                        id="grade_level"
+                                        name="grade_level"
+                                        value={formData.grade_level}
+                                        onChange={handleChange}
+                                    >
+                                        {gradeOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div className="mb-3">
+                                    <label htmlFor="topic" className="form-label">Lesson Topic</label>
+                                    <input
+                                        type="text"
+                                        className={`form-control ${errors.topic ? 'is-invalid' : ''}`}
+                                        id="topic"
+                                        name="topic"
+                                        value={formData.topic}
+                                        onChange={handleChange}
+                                        placeholder="e.g., Photosynthesis, Addition with Regrouping, World War II"
+                                    />
+                                    {errors.topic && <div className="invalid-feedback">{errors.topic}</div>}
+                                </div>
+                                
+                                <div className="mb-3">
+                                    <label htmlFor="teaching_strategy" className="form-label">Teaching Strategy</label>
+                                    <select
+                                        className="form-select"
+                                        id="teaching_strategy"
+                                        name="teaching_strategy"
+                                        value={formData.teaching_strategy}
+                                        onChange={handleChange}
+                                    >
+                                        {strategyOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="form-text">
+                                        The teaching strategy will influence how the lesson plan is structured.
+                                    </div>
+                                </div>
+                                
+                                <div className="d-flex justify-content-between">
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-outline-secondary"
+                                        onClick={() => navigate('/lessons')}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-primary"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2"></span>
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            'Generate Lesson Plan'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // LessonList Component
+        const LessonList = () => {
+            const [lessons, setLessons] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const navigate = useNavigate();
+            
+            useEffect(() => {
+                const fetchLessons = async () => {
+                    try {
+                        const response = await axios.get('/api/lessons');
+                        setLessons(response.data);
+                    } catch (err) {
+                        setError('Failed to load lessons');
+                        console.error(err);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                fetchLessons();
+            }, []);
+            
+            const handleDelete = async (id) => {
+                if (window.confirm('Are you sure you want to delete this lesson plan?')) {
+                    try {
+                        await axios.delete(`/api/lessons/${id}`);
+                        setLessons(lessons.filter(lesson => lesson.id !== id));
+                    } catch (err) {
+                        setError('Failed to delete lesson');
+                        console.error(err);
+                    }
+                }
+            };
+            
+            if (loading) {
+                return (
+                    <div className="text-center py-5">
+                        <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div>
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h2>My Lesson Plans</h2>
+                        <button 
+                            className="btn btn-primary"
+                            onClick={() => navigate('/lessons/new')}
+                        >
+                            <i className="bi bi-plus-circle me-2"></i> New Lesson Plan
+                        </button>
+                    </div>
+                    
+                    {error && <div className="alert alert-danger">{error}</div>}
+                    
+                    {lessons.length === 0 ? (
+                        <div className="card">
+                            <div className="card-body text-center py-5">
+                                <h5 className="card-title">No Lesson Plans Yet</h5>
+                                <p className="card-text">Create your first lesson plan to get started.</p>
+                                <button 
+                                    className="btn btn-primary"
+                                    onClick={() => navigate('/lessons/new')}
+                                >
+                                    Create First Lesson Plan
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="table table-hover">
+                                <thead className="table-light">
+                                    <tr>
+                                        <th>Topic</th>
+                                        <th>Grade</th>
+                                        <th>Strategy</th>
+                                        <th>Date Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {lessons.map(lesson => (
+                                        <tr key={lesson.id}>
+                                            <td>{lesson.topic}</td>
+                                            <td>{lesson.grade_level}</td>
+                                            <td>{lesson.teaching_strategy.replace('_', ' ')}</td>
+                                            <td>{new Date(lesson.date_created).toLocaleDateString()}</td>
+                                            <td>
+                                                <div className="btn-group">
+                                                    <button 
+                                                        className="btn btn-sm btn-outline-primary"
+                                                        onClick={() => navigate(`/lessons/${lesson.id}`)}
+                                                    >
+                                                        <i className="bi bi-eye"></i>
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-sm btn-outline-secondary"
+                                                        onClick={() => navigate(`/lessons/${lesson.id}/edit`)}
+                                                    >
+                                                        <i className="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-sm btn-outline-danger"
+                                                        onClick={() => handleDelete(lesson.id)}
+                                                    >
+                                                        <i className="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // LessonView Component
+        const LessonView = () => {
+            const [lesson, setLesson] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
+            const [presentationId, setPresentationId] = useState(null);
+            const { id } = useParams();
+            const navigate = useNavigate();
+            
+            useEffect(() => {
+                const fetchLesson = async () => {
+                    try {
+                        const response = await axios.get(`/api/lessons/${id}`);
+                        setLesson(response.data);
+                    } catch (err) {
+                        setError('Failed to load lesson');
+                        console.error(err);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                fetchLesson();
+            }, [id]);
+            
+            const handleGeneratePresentation = async () => {
+                setIsGeneratingPresentation(true);
+                try {
+                    const response = await axios.post(`/api/lessons/${id}/presentation`);
+                    setPresentationId(response.data.presentation_id);
+                } catch (err) {
+                    setError('Failed to generate presentation');
+                    console.error(err);
+                } finally {
+                    setIsGeneratingPresentation(false);
+                }
+            };
+            
+            const handleEdit = () => {
+                navigate(`/lessons/${id}/edit`);
+            };
+            
+            const handleDownloadPresentation = () => {
+                window.location.href = `/api/presentations/${presentationId}/download`;
+            };
+            
+            if (loading) {
+                return (
+                    <div className="text-center py-5">
+                        <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                );
+            }
+            
+            if (error) {
+                return <div className="alert alert-danger">{error}</div>;
+            }
+            
+            if (!lesson) {
+                return <div className="alert alert-warning">Lesson not found</div>;
+            }
+            
+            return (
+                <div>
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h2>{lesson.topic}</h2>
+                        <div className="btn-group">
+                            <button 
+                                className="btn btn-outline-primary"
+                                onClick={handleEdit}
+                            >
+                                <i className="bi bi-pencil me-2"></i> Edit
+                            </button>
+                            {presentationId ? (
+                                <button 
+                                    className="btn btn-success"
+                                    onClick={handleDownloadPresentation}
+                                >
+                                    <i className="bi bi-download me-2"></i> Download Presentation
+                                </button>
+                            ) : (
+                                <button 
+                                    className="btn btn-primary"
+                                    onClick={handleGeneratePresentation}
+                                    disabled={isGeneratingPresentation}
+                                >
+                                    {isGeneratingPresentation ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2"></span>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-file-earmark-slides me-2"></i> Generate Presentation
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <div className="row">
+                                <div className="col-md-4">
+                                    <strong>Grade Level:</strong> {lesson.grade_level}
+                                </div>
+                                <div className="col-md-4">
+                                    <strong>Teaching Strategy:</strong> {lesson.teaching_strategy.replace('_', ' ')}
+                                </div>
+                                <div className="col-md-4">
+                                    <strong>Date Created:</strong> {new Date(lesson.date_created).toLocaleDateString()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="card">
+                        <div className="card-header">
+                            <h5 className="mb-0">Lesson Plan</h5>
+                        </div>
+                        <div className="card-body">
+                            <div className="lesson-content" 
+                                 dangerouslySetInnerHTML={"{{"} __html: marked.parse(lesson.generated_plan) {"}}"}}></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+    </script>
+    
+    <script type="text/babel" src="{{ url_for('static', filename='js/app.jsx') }}"></script>
+</body>
+</html>
