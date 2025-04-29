@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="{{ 'ar' if language == 'ar' else 'en' }}" {{ 'dir="rtl"' if language == 'ar' else '' }} data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if language == 'ar' %}إرسال رسائل واتساب{% else %}WhatsApp Message Sender{% endif %} - Teacher's Lesson Planner</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .stat-card {
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-action {
+            min-width: 120px;
+        }
+        .template-help {
+            background-color: rgba(0, 123, 255, 0.1);
+            border-left: 4px solid #007bff;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Teacher's Lesson Planner</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">{% if language == 'ar' %}لوحة التحكم{% else %}Dashboard{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/lessons">{% if language == 'ar' %}دروسي{% else %}My Lessons{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/create-lesson">{% if language == 'ar' %}إنشاء درس{% else %}Create Lesson{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/textbook-to-lesson">{% if language == 'ar' %}تحويل الكتاب إلى درس{% else %}Convert Textbook to Lesson{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/whatsapp-sender">{% if language == 'ar' %}إرسال رسائل واتساب{% else %}WhatsApp Sender{% endif %}</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if language == 'ar' %}
+                                <i class="bi bi-globe"></i> العربية
+                            {% else %}
+                                <i class="bi bi-globe"></i> English
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('set_language', language='en') }}">English</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('set_language', language='ar') }}">العربية</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <span class="nav-item">
+                        <a href="/user" class="nav-link">{% if language == 'ar' %}مرحباً, {{ current_user.name }}!{% else %}Welcome, {{ current_user.name }}!{% endif %}</a>
+                    </span>
+                </ul>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light">{% if language == 'ar' %}تسجيل الخروج{% else %}Logout{% endif %}</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">{% if language == 'ar' %}إرسال رسائل واتساب للأهالي{% else %}Send WhatsApp Messages to Parents{% endif %}</h4>
+                    </div>
+                    <div class="card-body">
+                        {% with flash_messages = get_flashed_messages(with_categories=true) %}
+                            {% if flash_messages %}
+                                {% for category, message in flash_messages %}
+                                    <div class="alert alert-{{ category if category else 'info' }}">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        {% if session.get('whatsapp_messages') %}
+                            <div class="card mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">{% if language == 'ar' %}الرسائل المعالجة{% else %}Processed Messages{% endif %}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{% if language == 'ar' %}تم معالجة {{ session.get('whatsapp_messages')|length }} رسالة. انقر على "إرسال" لفتح واتساب ويب لكل رسالة.{% else %}Processed {{ session.get('whatsapp_messages')|length }} messages. Click "Send" to open WhatsApp Web for each message.{% endif %}</p>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>{% if language == 'ar' %}اسم الطالب{% else %}Student Name{% endif %}</th>
+                                                    <th>{% if language == 'ar' %}الدرجة{% else %}Grade{% endif %}</th>
+                                                    <th>{% if language == 'ar' %}رقم الهاتف{% else %}Phone Number{% endif %}</th>
+                                                    <th>{% if language == 'ar' %}الرسالة{% else %}Message{% endif %}</th>
+                                                    <th>{% if language == 'ar' %}إجراء{% else %}Action{% endif %}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for message in session.get('whatsapp_messages') %}
+                                                    <tr>
+                                                        <td>{{ loop.index }}</td>
+                                                        <td>{{ message.student_name }}</td>
+                                                        <td>{{ message.grade }}</td>
+                                                        <td>{{ message.phone }}</td>
+                                                        <td>{{ message.message }}</td>
+                                                        <td>
+                                                            <a href="{{ url_for('send_individual_whatsapp', index=loop.index0) }}" class="btn btn-sm btn-success">
+                                                                {% if language == 'ar' %}إرسال{% else %}Send{% endif %}
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="d-grid gap-2 mt-3">
+                                        <button type="button" class="btn btn-secondary" onclick="clearMessages()">
+                                            {% if language == 'ar' %}مسح الرسائل{% else %}Clear Messages{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                function clearMessages() {
+                                    // Use AJAX to clear the session data
+                                    fetch('/clear-whatsapp-messages', { method: 'POST' })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data.success) {
+                                                // Reload the page
+                                                window.location.reload();
+                                            }
+                                        });
+                                }
+                            </script>
+                        {% endif %}
+
+                        <div class="alert alert-info">
+                            <h5>{% if language == 'ar' %}كيفية الاستخدام:{% else %}How to use:{% endif %}</h5>
+                            <ol>
+                                <li>{% if language == 'ar' %}قم بتحميل ملف Excel يحتوي على بيانات الطلاب (الأسماء والدرجات وأرقام هواتف أولياء الأمور){% else %}Upload an Excel file containing student data (names, grades, and parent phone numbers){% endif %}</li>
+                                <li>{% if language == 'ar' %}حدد أرقام الأعمدة التي تحتوي على المعلومات المطلوبة{% else %}Specify the column numbers containing the required information{% endif %}</li>
+                                <li>{% if language == 'ar' %}قم بتخصيص قالب الرسالة باستخدام المتغيرات المتاحة{% else %}Customize the message template using the available variables{% endif %}</li>
+                                <li>{% if language == 'ar' %}انقر على "إرسال الرسائل" لفتح WhatsApp Web مع الرسائل المعدة مسبقًا{% else %}Click "Send Messages" to open WhatsApp Web with pre-composed messages{% endif %}</li>
+                            </ol>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('whatsapp_sender') }}" enctype="multipart/form-data">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-3">
+                                <label for="excel_file" class="form-label">{% if language == 'ar' %}ملف Excel{% else %}Excel File{% endif %}</label>
+                                {{ form.excel_file(class="form-control", id="excel_file") }}
+                                {% if form.excel_file.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.excel_file.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{% if language == 'ar' %}يجب أن يكون الملف بتنسيق .xlsx أو .xls{% else %}File must be in .xlsx or .xls format{% endif %}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="student_name_column" class="form-label">{% if language == 'ar' %}رقم عمود أسماء الطلاب{% else %}Student Name Column Number{% endif %}</label>
+                                        {{ form.student_name_column(class="form-control", id="student_name_column") }}
+                                        {% if form.student_name_column.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.student_name_column.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">{% if language == 'ar' %}مثال: 1 للعمود A{% else %}Example: 1 for column A{% endif %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="grades_column" class="form-label">{% if language == 'ar' %}رقم عمود الدرجات{% else %}Grades Column Number{% endif %}</label>
+                                        {{ form.grades_column(class="form-control", id="grades_column") }}
+                                        {% if form.grades_column.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.grades_column.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">{% if language == 'ar' %}مثال: 2 للعمود B{% else %}Example: 2 for column B{% endif %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="phone_column" class="form-label">{% if language == 'ar' %}رقم عمود أرقام الهواتف{% else %}Phone Numbers Column Number{% endif %}</label>
+                                        {{ form.phone_column(class="form-control", id="phone_column") }}
+                                        {% if form.phone_column.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.phone_column.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">{% if language == 'ar' %}مثال: 3 للعمود C{% else %}Example: 3 for column C{% endif %}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="message_template" class="form-label">{% if language == 'ar' %}قالب الرسالة{% else %}Message Template{% endif %}</label>
+                                {{ form.message_template(class="form-control", id="message_template", rows=5) }}
+                                {% if form.message_template.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.message_template.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="template-help mt-2">
+                                    <h6>{% if language == 'ar' %}المتغيرات المتاحة:{% else %}Available Variables:{% endif %}</h6>
+                                    <ul>
+                                        <li><code>{student_name}</code> - {% if language == 'ar' %}اسم الطالب{% else %}Student's name{% endif %}</li>
+                                        <li><code>{grade}</code> - {% if language == 'ar' %}درجة الطالب{% else %}Student's grade{% endif %}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                {{ form.submit(class="btn btn-primary btn-lg") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Teacher's Lesson Planner</h5>
+                    <p>Making lesson planning easier and more effective.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>© 2025 Teacher's Lesson Planner. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="{{ 'ar' if language == 'ar' else 'en' }}" {{ 'dir="rtl"' if language == 'ar' else '' }} data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Teacher's Lesson Planner</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .stat-card {
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-action {
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Teacher's Lesson Planner</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">{% if language == 'ar' %}لوحة التحكم{% else %}Dashboard{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/lessons">{% if language == 'ar' %}دروسي{% else %}My Lessons{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/create-lesson">{% if language == 'ar' %}إنشاء درس{% else %}Create Lesson{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/textbook-to-lesson">{% if language == 'ar' %}تحويل الكتاب إلى درس{% else %}Convert Textbook to Lesson{% endif %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/whatsapp-sender">{% if language == 'ar' %}إرسال رسائل واتساب{% else %}WhatsApp Sender{% endif %}</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if language == 'ar' %}
+                                <i class="bi bi-globe"></i> العربية
+                            {% else %}
+                                <i class="bi bi-globe"></i> English
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('set_language', language='en') }}">English</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('set_language', language='ar') }}">العربية</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <span class="nav-item">
+                        <a  href="/user" class="nav-link" >{% if language == 'ar' %}مرحباً, {{ current_user.name }}!{% else %}Welcome, {{ current_user.name }}!{% endif %}</a>
+                    </span>
+                    </ul>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light">{% if language == 'ar' %}تسجيل الخروج{% else %}Logout{% endif %}</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">{% if language == 'ar' %}الملف الشخصي{% else %}User Profile{% endif %}</h4>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                <div class="alert alert-info">
+                                    {% for message in messages %}
+                                        {{ message }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST" action="{{ url_for('user') }}">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-3">
+                                <label for="name" class="form-label">{% if language == 'ar' %}الاسم{% else %}Name{% endif %}</label>
+                                {{ form.name(class="form-control", id="name") }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">{% if language == 'ar' %}البريد الإلكتروني{% else %}Email{% endif %}</label>
+                                {{ form.email(class="form-control", id="email") }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">{% if language == 'ar' %}كلمة المرور الحالية{% else %}Current Password{% endif %}</label>
+                                {{ form.current_password(class="form-control", id="current_password") }}
+                                {% if form.current_password.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.current_password.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{% if language == 'ar' %}مطلوب لتأكيد التغييرات{% else %}Required to confirm changes{% endif %}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">{% if language == 'ar' %}كلمة المرور الجديدة{% else %}New Password{% endif %}</label>
+                                {{ form.new_password(class="form-control", id="new_password") }}
+                                {% if form.new_password.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.new_password.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{% if language == 'ar' %}اتركها فارغة إذا كنت لا ترغب في تغيير كلمة المرور{% else %}Leave empty if you don't want to change your password{% endif %}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">{% if language == 'ar' %}تأكيد كلمة المرور{% else %}Confirm Password{% endif %}</label>
+                                {{ form.confirm_password(class="form-control", id="confirm_password") }}
+                                {% if form.confirm_password.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.confirm_password.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <div class="row justify-content-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-danger">{% if language == 'ar' %}حذف الحساب{% else %}Delete Account{% endif %}</h5>
+                                <p class="card-text">{% if language == 'ar' %}تحذير: هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع دروسك وبياناتك نهائيًا.{% else %}Warning: This action cannot be undone. All your lessons and data will be permanently deleted.{% endif %}</p>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                    {% if language == 'ar' %}حذف حسابي{% else %}Delete My Account{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Account Modal -->
+        <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteAccountModalLabel">{% if language == 'ar' %}تأكيد حذف الحساب{% else %}Confirm Account Deletion{% endif %}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>{% if language == 'ar' %}هل أنت متأكد أنك تريد حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه.{% else %}Are you sure you want to delete your account? This action cannot be undone.{% endif %}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% if language == 'ar' %}إلغاء{% else %}Cancel{% endif %}</button>
+                        <form action="{{ url_for('delete_account') }}" method="POST">
+                            <button type="submit" class="btn btn-danger">{% if language == 'ar' %}نعم، احذف حسابي{% else %}Yes, Delete My Account{% endif %}</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Teacher's Lesson Planner</h5>
+                    <p>Making lesson planning easier and more effective.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>© 2025 Teacher's Lesson Planner. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
