@@ -25,7 +25,9 @@ class Lesson(db.Model):
     grade_level = db.Column(db.String(20), nullable=False)
     topic = db.Column(db.String(200), nullable=False)
     teaching_strategy = db.Column(db.String(100), nullable=False)
+    language = db.Column(db.String(100), nullable=False)
     generated_plan = db.Column(db.Text, nullable=True)
+    gpt_plan = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     presentations = db.relationship('Presentation', backref='lesson', lazy='dynamic')
@@ -41,6 +43,7 @@ class Lesson(db.Model):
             'topic': self.topic,
             'teaching_strategy': self.teaching_strategy,
             'generated_plan': self.generated_plan,
+            'gpt_plan': self.gpt_plan,
             'date_created': self.date_created.isoformat(),
             'date_modified': self.date_modified.isoformat(),
             'presentations': [p.to_dict() for p in self.presentations]
